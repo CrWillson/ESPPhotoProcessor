@@ -87,8 +87,8 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path)
 
     try {
         for (const auto& entry : fs::directory_iterator(directory_path)) {
-            if (entry.is_regular_file()) {  // Check if it's a file (not a directory)
-                filenames.push_back(entry.path().string());  // Get just the filename
+            if (entry.is_regular_file()) { 
+                filenames.push_back(entry.path().string()); 
             }
         }
     } catch (const std::exception& e) {
@@ -100,8 +100,8 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path)
 
 int main(int argc, char *argv[]) {    
     auto filenames = get_filenames_in_dir("../images/");
-    int width = 96;  // Set your image width
-    int height = 96; // Set your image height
+    int width = 96;
+    int height = 96;
     
     // Load and convert RGB565 to RGB888
     auto images = load_rgb565_images(filenames, width, height);
@@ -133,18 +133,17 @@ int main(int argc, char *argv[]) {
     auto whiteMasksQImgs = QT5::matToQImage(whiteMasks);
     auto rgb888QImgs = QT5::matToQImage(rgb888Images);
 
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[0]), 0, 0);  // Row 0, Col 0
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[0]), 0, 1);  // Row 0, Col 0
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[1]), 0, 2);  // Row 0, Col 1
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[1]), 0, 3);  // Row 0, Col 1
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[2]), 1, 0);  // Row 1, Col 0
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[2]), 1, 1);  // Row 1, Col 0
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[3]), 1, 2);  // Row 1, Col 1
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[3]), 1, 3);  // Row 1, Col 1
+    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[0]), 0, 0);
+    layout->addWidget(QT5::createImageLabel(rgb888QImgs[0]), 0, 1);
+    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[1]), 0, 2);
+    layout->addWidget(QT5::createImageLabel(rgb888QImgs[1]), 0, 3);
+    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[2]), 1, 0);
+    layout->addWidget(QT5::createImageLabel(rgb888QImgs[2]), 1, 1);
+    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[3]), 1, 2);
+    layout->addWidget(QT5::createImageLabel(rgb888QImgs[3]), 1, 3);
 
     // Set the layout for the window
     window.setLayout(layout);
-
     // Show the window
     window.show();
 

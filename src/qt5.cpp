@@ -1,6 +1,5 @@
 #include "qt5.hpp"
 
-// Vectorized conversion from a span of cv::Mat1b to a vector of QImage
 std::vector<QImage> QT5::matToQImage(std::span<const cv::Mat1b> mats) {
     std::vector<QImage> qimages;
     qimages.reserve(mats.size());  // Pre-allocate memory for efficiency
@@ -46,7 +45,6 @@ std::vector<QImage> QT5::matToQImage(std::span<const cv::Mat> mats) {
     return qimages;
 }
 
-// Convert OpenCV Mat to QImage for Qt display
 QImage QT5::matToQImage(const cv::Mat& mat) {
     cv::Mat rgbMat;
     
@@ -65,10 +63,9 @@ QImage QT5::matToQImage(const cv::Mat& mat) {
 }
 
 
-// Function to create a QLabel with an image
 QLabel* QT5::createImageLabel(const QImage& image) {
     QLabel* label = new QLabel();
     label->setPixmap(QPixmap::fromImage(image));
-    label->setScaledContents(true);  // Scale the image to fit the label
+    label->setScaledContents(true);
     return label;
 }

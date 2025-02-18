@@ -12,17 +12,15 @@
 
 #include "opencv2.hpp"
 
-namespace QT5 {
-    
-// Convert OpenCV Mat to QImage for Qt display
-QImage matToQImage(const cv::Mat& mat);
-std::vector<QImage> matToQImage(std::span<const cv::Mat> mats);
-std::vector<QImage> matToQImage(std::span<const cv::Mat1b> mats);
+class QT5 {
+public: 
 
-// Function to create a QLabel with an image
-QLabel* createImageLabel(const QImage& image);
+static QImage matToQImage(const cv::Mat& mat);
+static std::vector<QImage> matToQImage(std::span<const cv::Mat> mats);
+static std::vector<QImage> matToQImage(std::span<const cv::Mat1b> mats);
 
+static QLabel* createImageLabel(const QImage& image);
 
 
-}
+};
 
