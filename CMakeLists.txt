@@ -23,6 +23,8 @@ include_directories(${OpenCV_INCLUDE_DIRS} include)
 # Add the source files
 add_executable(${PROJECT_NAME} 
     src/main.cpp
+    src/microcv2.cpp
+    src/qt5.cpp
 )
 
 # Link the necessary libraries
