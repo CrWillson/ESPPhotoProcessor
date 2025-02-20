@@ -12,15 +12,15 @@
 
 #include "opencv2.hpp"
 
-class QT5 {
-public: 
+namespace QT5 {
 
-static QImage matToQImage(const cv::Mat& mat);
-static std::vector<QImage> matToQImage(std::span<const cv::Mat> mats);
-static std::vector<QImage> matToQImage(std::span<const cv::Mat1b> mats);
+QImage matToQImage(const cv::Mat& mat);
+std::vector<QImage> matToQImage(std::span<const cv::Mat> mats);
+std::vector<QImage> matToQImage(std::span<const cv::Mat1b> mats);
 
-static QLabel* createImageLabel(const QImage& image);
+QLabel* createImageLabel(const QImage& image);
+void showImageWindows(int argc, char *argv[], const std::span<cv::Mat>& originalImages, const std::span<cv::Mat>& processedImages);
 
 
-};
+}
 

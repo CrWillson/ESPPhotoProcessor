@@ -63,7 +63,8 @@ bool MicroCV2::processRedImg(const cv::Mat& image, cv::Mat1b& mask)
     uint16_t redCount = 0;
     for (uint8_t y = 0; y < image.rows; ++y) {
         for (uint8_t x = 0; x < image.cols; ++x) {
-            uint16_t pixel = image.at<uint16_t>(y,x);
+            cv::Vec2b vecpixel = image.at<cv::Vec2b>(y, x);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
 
             uint16_t red, green, blue;
             RGB565toRGB888(pixel, red, green, blue);
@@ -171,6 +172,47 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
 
     if (dist > MAX_WHITE_DIST) dist = MAX_WHITE_DIST;
     if (dist < -MAX_WHITE_DIST) dist = -MAX_WHITE_DIST;
+
+    return true;
+}
+
+
+cv::Mat MicroCV2::colorizeMask(const cv::Mat1b& mask, const cv::Vec3b& color) {
+    cv::Mat3b colorMask(mask.size());
+    cv::Vec3b bgrColor = {color[2], color[1], color[0]}; // Swap from RGB to BGR
+
+    for (int row = 0; row < mask.rows; ++row) {
+        for (int col = 0; col < mask.cols; ++col) {
+            if (mask(row, col) > 0) {
+                colorMask(row, col) = bgrColor;
+            } else {
+                colorMask(row, col) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+
+    return colorMask;
+}
+
+
+bool MicroCV2::layerMask(cv::Mat& dest, const cv::Mat& mask)
+{
+    if (dest.size != mask.size) {
+        fmt::println("Destination and mask size do not match.");
+        return false;
+    }
+
+    for (int row = 0; row < mask.rows; row++) {
+        for (int col = 0; col < mask.cols; col++) {
+            cv::Vec3b& basePixel = dest.at<cv::Vec3b>(row, col);
+            const cv::Vec3b& maskPixel = mask.at<cv::Vec3b>(row, col);
+
+            // If the mask pixel is not black, overlay it onto the combined image
+            if (maskPixel != cv::Vec3b(0, 0, 0)) {
+                basePixel = maskPixel;
+            }
+        }
+    }
 
     return true;
 }

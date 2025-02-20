@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include "qt5.hpp"
 #include <fstream>
+#include <qapplication.h>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -100,6 +101,7 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path)
 
 int main(int argc, char *argv[]) {    
     auto filenames = get_filenames_in_dir("../images/");
+    int numFiles = filenames.size();
     int width = 96;
     int height = 96;
     
@@ -112,40 +114,38 @@ int main(int argc, char *argv[]) {
     
     auto rgb888Images = convert_rgb565_to_rgb888(images);
 
-    std::vector<cv::Mat1b> whiteMasks;
+    std::vector<cv::Mat> whiteMasks;
+    std::vector<cv::Mat> redMasks;
+    std::vector<cv::Mat> combinedMasks;
+
+    whiteMasks.reserve(numFiles);
+    redMasks.reserve(numFiles);
+    combinedMasks.reserve(numFiles);
+
     for (const auto& img : images) {
+        cv::Mat3b combMat = cv::Mat::zeros(img.size(), CV_8UC3);
+
         cv::Mat1b center;
-        cv::Mat1b mask;
+        cv::Mat1b wmask;
         int8_t dist, height;
 
-        MicroCV2::processWhiteImg(img, mask, center, dist, height);
+        MicroCV2::processWhiteImg(img, wmask, center, dist, height);
+        auto whitemask = MicroCV2::colorizeMask(wmask, {255,255,255});
+        whiteMasks.push_back(whitemask);
 
-        whiteMasks.push_back(mask);
+        cv::Mat1b rmask;
+
+        MicroCV2::processRedImg(img, rmask);
+        auto redmask = MicroCV2::colorizeMask(rmask, {255,0,0});
+        redMasks.push_back(redmask);
+
+        MicroCV2::layerMask(combMat, whitemask);
+        MicroCV2::layerMask(combMat, redmask);
+        combinedMasks.push_back(combMat);
+
     }
-    
-    // Create the main window
-    QApplication app(argc, argv);
-    QWidget window;
-    window.setWindowTitle("Main Window");
-    QGridLayout *layout = new QGridLayout();
 
-    // Convert to QImage
-    auto whiteMasksQImgs = QT5::matToQImage(whiteMasks);
-    auto rgb888QImgs = QT5::matToQImage(rgb888Images);
 
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[0]), 0, 0);
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[0]), 0, 1);
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[1]), 0, 2);
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[1]), 0, 3);
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[2]), 1, 0);
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[2]), 1, 1);
-    layout->addWidget(QT5::createImageLabel(whiteMasksQImgs[3]), 1, 2);
-    layout->addWidget(QT5::createImageLabel(rgb888QImgs[3]), 1, 3);
-
-    // Set the layout for the window
-    window.setLayout(layout);
-    // Show the window
-    window.show();
-
-    return app.exec();
+    QT5::showImageWindows(argc, argv, rgb888Images, combinedMasks);
+    return 0;
 }

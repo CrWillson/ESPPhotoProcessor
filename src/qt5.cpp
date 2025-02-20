@@ -69,3 +69,34 @@ QLabel* QT5::createImageLabel(const QImage& image) {
     label->setScaledContents(true);
     return label;
 }
+
+
+void QT5::showImageWindows(int argc, char *argv[], const std::span<cv::Mat>& originalImages, const std::span<cv::Mat>& processedImages) {
+    // Create a Qt Application
+    QApplication app(argc, argv);
+
+    for (size_t i = 0; i < originalImages.size(); ++i) {
+        // Convert original and processed images to QImage
+        QImage originalQImage = matToQImage(originalImages[i]);
+        QImage processedQImage = matToQImage(processedImages[i]);
+
+        // Create a new QWidget for each image pair
+        QWidget* window = new QWidget();
+        QVBoxLayout* layout = new QVBoxLayout(window);
+
+        // Create a horizontal layout to place original and processed images side by side
+        QHBoxLayout* imageLayout = new QHBoxLayout();
+        imageLayout->addWidget(createImageLabel(originalQImage));
+        imageLayout->addWidget(createImageLabel(processedQImage));
+
+        // Add the layout for this pair of images to the window layout
+        layout->addLayout(imageLayout);
+        window->setLayout(layout);
+
+        // Show the window
+        window->setWindowTitle(QString("%1").arg(i));
+        window->show();
+    }
+
+    app.exec();  // Start the event loop
+}
