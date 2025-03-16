@@ -1,3 +1,4 @@
+#include "constants.hpp"
 #include "microcv2.hpp"
 #include "opencv2.hpp"
 #include <fmt/core.h>
@@ -12,6 +13,141 @@
 
 namespace fs = std::filesystem;
 
+constexpr uint16_t RGB888toRGB565(const uint8_t r, const uint8_t g, const uint8_t b)
+{
+    uint16_t red = (r * 31) / 255;
+    uint16_t green = (g * 63) / 255;
+    uint16_t blue = (b * 31) / 255;
+
+    return (red << 11) | (green << 5) | blue;
+}
+
+void generateColorBars(cv::Mat& image)
+{
+    uint16_t colors[] = {
+        RGB888toRGB565(255, 0, 0),    // Red        - 0xf800
+        RGB888toRGB565(0, 255, 0),    // Green      - 0x07e0
+        RGB888toRGB565(0, 0, 255),    // Blue       - 0x001f
+        RGB888toRGB565(255, 255, 0),  // Yellow     - 0xffe0
+        RGB888toRGB565(0, 255, 255),  // Cyan       - 0x07ff
+        RGB888toRGB565(255, 0, 255)   // Magenta    - 0xf81f
+    };
+
+    int barWidth = IMG_COLS / 6; // Each bar takes 1/6 of the width
+
+    for (int y = 0; y < IMG_ROWS; y++) {
+        for (int x = 0; x < IMG_COLS; x++) {
+            int barIndex = x / barWidth; // Determine which color bar to use
+            uint16_t color = colors[barIndex];
+
+            // Store color as two bytes (little-endian)
+            cv::Vec2b& pixel = image.at<cv::Vec2b>(y, x);
+            pixel[0] = color & 0xFF;       // Lower byte
+            pixel[1] = (color >> 8) & 0xFF; // Upper byte
+        }
+    }
+}
+
+cv::Mat loadBinaryImage(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return cv::Mat();
+    }
+
+    // Read binary data
+    // std::vector<uint8_t> buffer(IMG_SIZE);
+    uint8_t buffer[IMG_SIZE];
+    file.read(reinterpret_cast<char*>(buffer), IMG_SIZE);
+    file.close();
+
+    if (file.gcount() != IMG_SIZE) {
+        std::cerr << "Error: Read only " << file.gcount() << " bytes instead of " << IMG_SIZE << std::endl;
+        return cv::Mat();
+    }
+
+    // Convert buffer into cv::Mat
+    cv::Mat image(IMG_ROWS, IMG_COLS, CV_8UC2, buffer);
+
+    // Make a deep copy to ensure it remains valid after buffer goes out of scope
+    return image.clone();
+}
+
+cv::Mat loadHexImage(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return cv::Mat();
+    }
+
+    std::vector<uint16_t> hexNumbers;
+    hexNumbers.reserve(96*96);
+    std::string line;
+    bool inImageBlock = false;
+
+    while (std::getline(file, line)) {
+        // Check for start and end markers
+        if (line == "START IMAGE") {
+            inImageBlock = true;
+            continue;
+        }
+        if (line == "END IMAGE") {
+            inImageBlock = false;
+            break;
+        }
+
+        if (inImageBlock) {
+            std::istringstream iss(line);
+            std::string hexStr;
+            while (iss >> hexStr) {  // Read each hex number
+                uint16_t value = static_cast<uint16_t>(std::stoul(hexStr, nullptr, 16));
+                hexNumbers.push_back(value);
+            }
+        }
+    }
+
+    cv::Mat image(IMG_ROWS, IMG_COLS, CV_8UC2);
+
+    for (int i = 0; i < IMG_ROWS; i++) {
+        for (int j = 0; j < IMG_COLS; j++) {
+            uint16_t value = hexNumbers[i * IMG_COLS + j];
+            image.at<cv::Vec2b>(i, j) = cv::Vec2b(static_cast<uint8_t>(value & 0xFF), static_cast<uint8_t>((value >> 8) & 0xFF));
+        }
+    }
+
+    return image;
+}
+
+cv::Mat loadCompactHexImage(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return cv::Mat();
+    }
+
+    std::vector<uint16_t> hexNumbers;
+    hexNumbers.reserve(96*96);
+
+    std::string line;
+    while (std::getline(file, line)) {
+        for (size_t i = 0; i < line.size(); i += 4) {
+            std::string hexStr = line.substr(i, 4);
+            uint16_t value = static_cast<uint16_t>(std::stoul(hexStr, nullptr, 16));
+            hexNumbers.push_back(value);
+        }
+    }
+
+    cv::Mat image(IMG_ROWS, IMG_COLS, CV_8UC2);
+
+    for (int i = 0; i < IMG_ROWS; i++) {
+        for (int j = 0; j < IMG_COLS; j++) {
+            uint16_t value = hexNumbers[i * IMG_COLS + j];
+            image.at<cv::Vec2b>(i, j) = cv::Vec2b(static_cast<uint8_t>(value & 0xFF), static_cast<uint8_t>((value >> 8) & 0xFF));
+        }
+    }
+
+    return image;
+}
 
 std::vector<cv::Mat> load_rgb565_images(std::span<const std::string> filenames, int rows, int cols) {
     std::vector<cv::Mat> images;
@@ -111,15 +247,28 @@ int main(int argc, char *argv[]) {
         fmt::print("Failed to load image.\n");
         return -1;
     }
+
+    auto binImage = loadBinaryImage("../binary_images/serial_dump.bin");
+    images.push_back(binImage);
+
+    auto binImage2 = loadBinaryImage("../binary_images/serial_dump2.bin");
+    images.push_back(binImage2);
+    
+    cv::Mat colorBars(IMG_ROWS, IMG_COLS, CV_8UC2);
+    generateColorBars(colorBars);
+    images.push_back(colorBars);
+
+    cv::Mat hexImage1 = loadHexImage("../hex_images/image_dump.bin");
+    images.push_back(hexImage1);
+
+    cv::Mat hexImage2 = loadCompactHexImage("../hex_images/small_image_dump.bin");
+    images.push_back(hexImage2);
+    cv::Mat hexImage3 = loadCompactHexImage("../hex_images/small_image_dump2.bin");
+    images.push_back(hexImage3);
     
     auto rgb888Images = convert_rgb565_to_rgb888(images);
 
-    std::vector<cv::Mat> whiteMasks;
-    std::vector<cv::Mat> redMasks;
     std::vector<cv::Mat> combinedMasks;
-
-    whiteMasks.reserve(numFiles);
-    redMasks.reserve(numFiles);
     combinedMasks.reserve(numFiles);
 
     for (const auto& img : images) {
@@ -131,15 +280,15 @@ int main(int argc, char *argv[]) {
 
         MicroCV2::processWhiteImg(img, wmask, center, dist, height);
         auto whitemask = MicroCV2::colorizeMask(wmask, {255,255,255});
-        whiteMasks.push_back(whitemask);
+        auto centermask = MicroCV2::colorizeMask(center, {200,200,200});
 
         cv::Mat1b rmask;
 
         MicroCV2::processRedImg(img, rmask);
         auto redmask = MicroCV2::colorizeMask(rmask, {255,0,0});
-        redMasks.push_back(redmask);
 
         MicroCV2::layerMask(combMat, whitemask);
+        MicroCV2::layerMask(combMat, centermask);
         MicroCV2::layerMask(combMat, redmask);
         combinedMasks.push_back(combMat);
 

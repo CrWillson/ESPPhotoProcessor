@@ -43,3 +43,8 @@ constexpr uint32_t tx_baud = 500000;
 constexpr const char* MOUNT_POINT = "/sdcard";
 constexpr const char* FILE_PREFIX = "IMAGE";
 constexpr const char* FILE_EXTEN  = ".BIN";
+
+constexpr uint8_t IMG_ROWS = 96;
+constexpr uint8_t IMG_COLS = 96;
+constexpr uint8_t IMG_BPP = 2;
+constexpr uint16_t IMG_SIZE = IMG_ROWS * IMG_COLS * IMG_BPP;

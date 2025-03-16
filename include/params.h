@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include "opencv2.hpp"
+#include "constants.hpp"
 
 
 constexpr uint16_t BOX_AREA(const uint8_t TL_X, const uint8_t TL_Y, const uint8_t BR_X, const uint8_t BR_Y) {
@@ -22,11 +23,6 @@ constexpr uint8_t CLAMP_CENTER_POS(const uint8_t IMG_COLS, const uint8_t WHITE_C
         return WHITE_CENTER_POS;
     return IMG_COLS - WHITE_CENTER_POS;
 }
-
-// General constants
-
-constexpr uint8_t IMG_ROWS = 96;        // Number of rows in image
-constexpr uint8_t IMG_COLS = 96;        // Number of columns in image
 
 // Stop line constants
 
