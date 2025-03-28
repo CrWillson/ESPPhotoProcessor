@@ -7,14 +7,14 @@
 #include <qapplication.h>
 #include <string>
 #include <filesystem>
+#include <type_traits>
 #include <vector>
 #include <array>
 #include <span>
 
 namespace fs = std::filesystem;
 
-constexpr uint16_t RGB888toRGB565(const uint8_t r, const uint8_t g, const uint8_t b)
-{
+constexpr uint16_t RGB888toRGB565(const uint8_t r, const uint8_t g, const uint8_t b) {
     uint16_t red = (r * 31) / 255;
     uint16_t green = (g * 63) / 255;
     uint16_t blue = (b * 31) / 255;
@@ -22,8 +22,47 @@ constexpr uint16_t RGB888toRGB565(const uint8_t r, const uint8_t g, const uint8_
     return (red << 11) | (green << 5) | blue;
 }
 
-void generateColorBars(cv::Mat& image)
-{
+cv::Mat convert_rgb565_to_rgb888(const cv::Mat rgb565_image) {
+    cv::Mat rgb888_image(rgb565_image.rows, rgb565_image.cols, CV_8UC3);  // RGB888 output image
+
+    // Loop through each pixel in the RGB565 image
+    for (int row = 0; row < rgb565_image.rows; ++row) {
+        for (int col = 0; col < rgb565_image.cols; ++col) {
+            // Get the RGB565 pixel (2 bytes per pixel)
+            cv::Vec2b vecpixel = rgb565_image.at<cv::Vec2b>(row, col);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+
+            // Extract individual color components (5-bit Red, 6-bit Green, 5-bit Blue)
+            uint8_t r = (pixel >> 11) & 0x1F;  // Extract red (5 bits)
+            uint8_t g = (pixel >> 5) & 0x3F;   // Extract green (6 bits)
+            uint8_t b = pixel & 0x1F;          // Extract blue (5 bits)
+
+            // Scale the components to 0-255 range
+            uint8_t r_scaled = (r * 255) / 31;  // Scale red from 5 bits to 8 bits
+            uint8_t g_scaled = (g * 255) / 63;  // Scale green from 6 bits to 8 bits
+            uint8_t b_scaled = (b * 255) / 31;  // Scale blue from 5 bits to 8 bits
+
+            // Set the RGB888 pixel in the output image
+            rgb888_image.at<cv::Vec3b>(row, col) = cv::Vec3b(b_scaled, g_scaled, r_scaled);  // OpenCV uses BGR order
+        }
+    }
+
+    return rgb888_image;
+}
+
+std::vector<cv::Mat> convert_rgb565_to_rgb888(std::span<const cv::Mat> rgb565_images) {
+    std::vector<cv::Mat> rgb888_images;
+    rgb888_images.reserve(rgb565_images.size());  // Preallocate memory for efficiency
+
+    // Loop through each RGB565 image in the input span
+    for (const auto& rgb565_image : rgb565_images) {
+        rgb888_images.push_back(std::move(convert_rgb565_to_rgb888(rgb565_image)));  // Move the image into the vector
+    }
+
+    return rgb888_images;
+}
+
+void generateColorBars(cv::Mat& image) {
     uint16_t colors[] = {
         RGB888toRGB565(255, 0, 0),    // Red        - 0xf800
         RGB888toRGB565(0, 255, 0),    // Green      - 0x07e0
@@ -118,7 +157,7 @@ cv::Mat loadHexImage(const std::string& filename) {
     return image;
 }
 
-cv::Mat loadCompactHexImage(const std::string& filename) {
+cv::Mat load_compact_hex_image(const std::string& filename, bool saveImage = false) {
     std::ifstream file(filename);
     if (!file) {
         std::cerr << "Error: Could not open file " << filename << std::endl;
@@ -146,7 +185,27 @@ cv::Mat loadCompactHexImage(const std::string& filename) {
         }
     }
 
+    if (saveImage) {
+        auto rgb888image = convert_rgb565_to_rgb888(image);
+        cv::imwrite(filename + std::string(".png"), rgb888image);
+    }
+
     return image;
+}
+
+std::vector<cv::Mat> load_compact_hex_images(std::span<const std::string> filenames, bool save_images = false) {
+    std::vector<cv::Mat> images;
+    images.reserve(filenames.size());  // Preallocate memory for efficiency
+
+    for (const auto& filename : filenames) {
+        cv::Mat image = load_compact_hex_image(filename, save_images);
+        if (image.empty()) {
+            throw std::runtime_error("Failed to load image: " + filename);
+        }
+        images.push_back(std::move(image));  // Move the matrix into the vector
+    }
+
+    return images;
 }
 
 std::vector<cv::Mat> load_rgb565_images(std::span<const std::string> filenames, int rows, int cols) {
@@ -183,49 +242,18 @@ std::vector<cv::Mat> load_rgb565_images(std::span<const std::string> filenames, 
     return images;
 }
 
-std::vector<cv::Mat> convert_rgb565_to_rgb888(std::span<const cv::Mat> rgb565_images) {
-    std::vector<cv::Mat> rgb888_images;
-    rgb888_images.reserve(rgb565_images.size());  // Preallocate memory for efficiency
-
-    // Loop through each RGB565 image in the input span
-    for (const auto& rgb565_image : rgb565_images) {
-        cv::Mat rgb888_image(rgb565_image.rows, rgb565_image.cols, CV_8UC3);  // RGB888 output image
-
-        // Loop through each pixel in the RGB565 image
-        for (int row = 0; row < rgb565_image.rows; ++row) {
-            for (int col = 0; col < rgb565_image.cols; ++col) {
-                // Get the RGB565 pixel (2 bytes per pixel)
-                cv::Vec2b vecpixel = rgb565_image.at<cv::Vec2b>(row, col);
-                uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
-
-                // Extract individual color components (5-bit Red, 6-bit Green, 5-bit Blue)
-                uint8_t r = (pixel >> 11) & 0x1F;  // Extract red (5 bits)
-                uint8_t g = (pixel >> 5) & 0x3F;   // Extract green (6 bits)
-                uint8_t b = pixel & 0x1F;          // Extract blue (5 bits)
-
-                // Scale the components to 0-255 range
-                uint8_t r_scaled = (r * 255) / 31;  // Scale red from 5 bits to 8 bits
-                uint8_t g_scaled = (g * 255) / 63;  // Scale green from 6 bits to 8 bits
-                uint8_t b_scaled = (b * 255) / 31;  // Scale blue from 5 bits to 8 bits
-
-                // Set the RGB888 pixel in the output image
-                rgb888_image.at<cv::Vec3b>(row, col) = cv::Vec3b(b_scaled, g_scaled, r_scaled);  // OpenCV uses BGR order
-            }
-        }
-
-        rgb888_images.push_back(std::move(rgb888_image));  // Move the image into the vector
-    }
-
-    return rgb888_images;
-}
-
-std::vector<std::string> get_filenames_in_dir(const std::string& directory_path) {
+std::vector<std::string> get_filenames_in_dir(const std::string& directory_path, std::span<std::string> extensions = {}) {
     std::vector<std::string> filenames;
 
     try {
         for (const auto& entry : fs::directory_iterator(directory_path)) {
-            if (entry.is_regular_file()) { 
-                filenames.push_back(entry.path().string()); 
+            if (entry.is_regular_file()) {
+                const std::string& filename = entry.path().filename().string();
+                if (extensions.empty() || std::any_of(extensions.begin(), extensions.end(), [&](const std::string& ext) {
+                    return filename.size() >= ext.size() && filename.compare(filename.size() - ext.size(), ext.size(), ext) == 0;
+                })) { 
+                    filenames.push_back(entry.path().string()); 
+                }
             }
         }
     } catch (const std::exception& e) {
@@ -235,37 +263,13 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path)
     return filenames;
 }
 
-int main(int argc, char *argv[]) {    
-    auto filenames = get_filenames_in_dir("../images/");
-    int numFiles = filenames.size();
-    int width = 96;
-    int height = 96;
-    
-    // Load and convert RGB565 to RGB888
-    auto images = load_rgb565_images(filenames, width, height);
-    if (images.empty()) {
-        fmt::print("Failed to load image.\n");
-        return -1;
-    }
+int main(int argc, char *argv[]) {       
+    std::vector<std::string> extensions = {".bin", ".BIN"};
+    auto compacthexfiles = get_filenames_in_dir("../hex_images/", extensions);
+    int numFiles = compacthexfiles.size();
 
-    auto binImage = loadBinaryImage("../binary_images/serial_dump.bin");
-    images.push_back(binImage);
+    auto images = load_compact_hex_images(compacthexfiles, true);
 
-    auto binImage2 = loadBinaryImage("../binary_images/serial_dump2.bin");
-    images.push_back(binImage2);
-    
-    cv::Mat colorBars(IMG_ROWS, IMG_COLS, CV_8UC2);
-    generateColorBars(colorBars);
-    images.push_back(colorBars);
-
-    cv::Mat hexImage1 = loadHexImage("../hex_images/image_dump.bin");
-    images.push_back(hexImage1);
-
-    cv::Mat hexImage2 = loadCompactHexImage("../hex_images/small_image_dump.bin");
-    images.push_back(hexImage2);
-    cv::Mat hexImage3 = loadCompactHexImage("../hex_images/small_image_dump2.bin");
-    images.push_back(hexImage3);
-    
     auto rgb888Images = convert_rgb565_to_rgb888(images);
 
     std::vector<cv::Mat> combinedMasks;
@@ -280,7 +284,7 @@ int main(int argc, char *argv[]) {
 
         MicroCV2::processWhiteImg(img, wmask, center, dist, height);
         auto whitemask = MicroCV2::colorizeMask(wmask, {255,255,255});
-        auto centermask = MicroCV2::colorizeMask(center, {200,200,200});
+        auto centermask = MicroCV2::colorizeMask(center, {0,255,0});
 
         cv::Mat1b rmask;
 

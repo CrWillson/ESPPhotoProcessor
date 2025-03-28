@@ -3,7 +3,7 @@
 // Opencv Imports
 #include "opencv2.hpp"
 
-#include "params.h"
+#include "params.hpp"
 #include "constants.hpp"
 
 #include <span>

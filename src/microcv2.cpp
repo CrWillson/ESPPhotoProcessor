@@ -1,4 +1,7 @@
 #include "microcv2.hpp"
+#include "params.hpp"
+#include <opencv2/core/types.hpp>
+#include <opencv2/opencv.hpp>
 
 void MicroCV2::RGB565toRGB888(const uint16_t pixel, uint16_t& red, uint16_t& green, uint16_t& blue)
 {
@@ -20,7 +23,7 @@ void MicroCV2::cropImage(cv::Mat& image, const cv::Point2i& BOX_TL, const cv::Po
 
 bool MicroCV2::isStopLine(const uint16_t red, const uint16_t green, const uint16_t blue)
 {
-    if (red >= green + STOP_GREEN_TOLERANCE && red >= blue + STOP_BLUE_TOLERANCE) { 
+    if (red >= green + Params::STOP_GREEN_TOLERANCE && red >= blue + Params::STOP_BLUE_TOLERANCE) { 
         return true;
     }
     return false;
@@ -28,33 +31,11 @@ bool MicroCV2::isStopLine(const uint16_t red, const uint16_t green, const uint16
 
 bool MicroCV2::isWhiteLine(const uint16_t red, const uint16_t green, const uint16_t blue)
 {
-    if (red >= WHITE_RED_THRESH && green >= WHITE_GREEN_THRESH && blue >= WHITE_BLUE_THRESH) { 
+    if (red >= Params::WHITE_RED_THRESH && green >= Params::WHITE_GREEN_THRESH && blue >= Params::WHITE_BLUE_THRESH) { 
         return true;
     }
     return false;
 }
-
-// bool MicroCV2::maskAllColors(const cv::Mat& image, cv::Mat1b& redMask, uint16_t& rCount, cv::Mat1b& whiteMask, uint16_t& wCount)
-// {
-//     redMask = cv::Mat::zeros(image.size(), CV_8UC1);
-//     whiteMask = cv::Mat::zeros(image.size(), CV_8UC1);
-
-//     for (uint8_t y = 0; y < image.rows; ++y) {
-//         for (uint8_t x = 0; x < image.cols; ++x) {
-//             uint16_t pixel = (image.at<cv::Vec2b>(y,x)[1] << 8) | image.at<cv::Vec2b>(y,x)[0];
-
-//             uint16_t red, green, blue;
-//             RGB565toRGB888(pixel, red, green, blue);
-
-//             if (red >= green + STOP_GREEN_TOLERANCE && red >= blue + STOP_BLUE_TOLERANCE) {
-//                 if (x >= STOPBOX_TL.x && x <= STOPBOX_BR.x && y >= STOPBOX_TL.y && y <= STOPBOX_BR.y) {
-//                     rCount++;
-//                 }
-//                 redMask.at<uchar>(y,x) = 255;
-//             }
-//         }
-//     }
-// }
 
 bool MicroCV2::processRedImg(const cv::Mat& image, cv::Mat1b& mask)
 {
@@ -70,7 +51,7 @@ bool MicroCV2::processRedImg(const cv::Mat& image, cv::Mat1b& mask)
             RGB565toRGB888(pixel, red, green, blue);
 
             if (isStopLine(red, green, blue) && !isWhiteLine(red, green, blue)) {
-                if (x >= STOPBOX_TL.x && x <= STOPBOX_BR.x && y >= STOPBOX_TL.y && y <= STOPBOX_BR.y) {
+                if (x >= Params::STOPBOX_TL.x && x <= Params::STOPBOX_BR.x && y >= Params::STOPBOX_TL.y && y <= Params::STOPBOX_BR.y) {
                     redCount++;
                     mask.at<uchar>(y,x) = 255;
                 }
@@ -78,10 +59,10 @@ bool MicroCV2::processRedImg(const cv::Mat& image, cv::Mat1b& mask)
         }
     }
 
-    cv::rectangle(mask, STOPBOX_TL, STOPBOX_BR, cv::Scalar(255), 1);
+    cv::rectangle(mask, Params::STOPBOX_TL, Params::STOPBOX_BR, cv::Scalar(255), 1);
 
-    uint16_t percentRed = (redCount*10000) / STOPBOX_AREA;
-    return percentRed >= (PERCENT_TO_STOP*100);
+    uint16_t percentRed = (redCount*10000) / Params::STOPBOX_AREA;
+    return percentRed >= (Params::PERCENT_TO_STOP*100);
 }
 
 bool MicroCV2::processCarImg(const cv::Mat &image, cv::Mat1b &mask)
@@ -96,8 +77,8 @@ bool MicroCV2::processCarImg(const cv::Mat &image, cv::Mat1b &mask)
             uint16_t red, green, blue;
             RGB565toRGB888(pixel, red, green, blue);
 
-            if (green >= red + CAR_RED_TOLERANCE && green >= blue + CAR_BLUE_TOLERANCE) {
-                if (x >= CARBOX_TL.x && x <= CARBOX_BR.x && y >= CARBOX_TL.y && y <= CARBOX_BR.y) {
+            if (green >= red + Params::CAR_RED_TOLERANCE && green >= blue + Params::CAR_BLUE_TOLERANCE) {
+                if (x >= Params::CARBOX_TL.x && x <= Params::CARBOX_BR.x && y >= Params::CARBOX_TL.y && y <= Params::CARBOX_BR.y) {
                     carCount++;
                     mask.at<uint8_t>(y,x) = 255;
                 }
@@ -105,10 +86,10 @@ bool MicroCV2::processCarImg(const cv::Mat &image, cv::Mat1b &mask)
         }
     }
 
-    cv::rectangle(mask, CARBOX_TL, CARBOX_BR, cv::Scalar(255), 1);
+    cv::rectangle(mask, Params::CARBOX_TL, Params::CARBOX_BR, cv::Scalar(255), 1);
 
-    uint16_t percentCar = (carCount*10000) / CARBOX_AREA;
-    return percentCar >= (PERCENT_TO_CAR*100);
+    uint16_t percentCar = (carCount*10000) / Params::CARBOX_AREA;
+    return percentCar >= (Params::PERCENT_TO_CAR*100);
 }
 
 bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b& centerLine, int8_t& dist, int8_t& height)
@@ -116,8 +97,8 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
     mask = cv::Mat::zeros(image.size(), CV_8UC1);
     centerLine = cv::Mat::zeros(image.size(), CV_8UC1);
 
-    for (uint8_t y = WHITE_VERTICAL_CROP; y < image.rows; ++y) {
-        for (uint8_t x = 0; x < WHITE_HORIZONTAL_CROP; ++x) {
+    for (uint8_t y = Params::WHITE_VERTICAL_CROP; y < image.rows; ++y) {
+        for (uint8_t x = 0; x < Params::WHITE_HORIZONTAL_CROP; ++x) {
             cv::Vec2b vecpixel = image.at<cv::Vec2b>(y, x);
             uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
 
@@ -147,31 +128,91 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
             maxInd = i;
         }
     }
-    if (maxSize < WHITE_MIN_SIZE) return false;
+    if (maxSize < Params::WHITE_MIN_SIZE) return false;
 
-    cv::Rect boundingBox = cv::boundingRect(contours[maxInd]);
-    dist = boundingBox.x + boundingBox.width / 2;
-    height = boundingBox.y + boundingBox.height / 2;
+    cv::Point topLeft, topRight, bottomLeft, bottomRight = contours[maxInd][0];
+    cv::Point leftTop, leftBottom, rightTop, rightBottom = contours[maxInd][0];
 
-    cv::Point leftmost_topmost = contours[maxInd][0];
+    // Initialize extreme values
+    int y_min = contours[maxInd][0].y, y_max = contours[maxInd][0].y;
+    int x_min = contours[maxInd][0].x, x_max = contours[maxInd][0].x;
 
-    // Iterate through the contour to find the topmost-leftmost point
-    for (const auto& point : contours[maxInd]) {
-        if (point.x < leftmost_topmost.x || 
-            (point.x == leftmost_topmost.x && point.y < leftmost_topmost.y)) {
-            leftmost_topmost = point;
+    // First pass to determine min/max x and y
+    for (const auto& pt : contours[maxInd]) {
+        if (pt.y < y_min) y_min = pt.y;
+        if (pt.y > y_max) y_max = pt.y;
+        if (pt.x < x_min) x_min = pt.x;
+        if (pt.x > x_max) x_max = pt.x;
+    }
+
+    // Second pass to find exact extreme points
+    for (const auto& pt : contours[maxInd]) {
+        // Topmost row (y_min)
+        if (pt.y == y_min) {
+            if (topLeft == cv::Point() || pt.x < topLeft.x) topLeft = pt;
+            if (topRight == cv::Point() || pt.x > topRight.x) topRight = pt;
         }
-    } 
-    dist = leftmost_topmost.x;
-    height = leftmost_topmost.y;
+        // Bottommost row (y_max)
+        if (pt.y == y_max) {
+            if (bottomLeft == cv::Point() || pt.x < bottomLeft.x) bottomLeft = pt;
+            if (bottomRight == cv::Point() || pt.x > bottomRight.x) bottomRight = pt;
+        }
+        // Leftmost column (x_min)
+        if (pt.x == x_min) {
+            if (leftTop == cv::Point() || pt.y < leftTop.y) leftTop = pt;
+            if (leftBottom == cv::Point() || pt.y > leftBottom.y) leftBottom = pt;
+        }
+        // Rightmost column (x_max)
+        if (pt.x == x_max) {
+            if (rightTop == cv::Point() || pt.y < rightTop.y) rightTop = pt;
+            if (rightBottom == cv::Point() || pt.y > rightBottom.y) rightBottom = pt;
+        }
+    }
 
-    cv::line(centerLine, cv::Point(dist, 0), cv::Point(dist, mask.rows - 1), cv::Scalar(255), 1);
-    cv::line(centerLine, cv::Point(0, height), cv::Point(mask.cols - 1, height), cv::Scalar(255), 1);
+    cv::circle(centerLine, leftTop, 1, cv::Scalar(255));
+    cv::circle(centerLine, topLeft, 1, cv::Scalar(255));
+    cv::circle(centerLine, rightTop, 1, cv::Scalar(255));
+    cv::circle(centerLine, topRight, 1, cv::Scalar(255));
+    cv::circle(centerLine, leftBottom, 1, cv::Scalar(255));
+    cv::circle(centerLine, bottomLeft, 1, cv::Scalar(255));
+    cv::circle(centerLine, rightBottom, 1, cv::Scalar(255));
+    cv::circle(centerLine, bottomRight, 1, cv::Scalar(255));
+
+
+    // cv::Point top = cv::Point((leftmost_topmost.x + topmost_rightmost.x) / 2, (leftmost_topmost.y + topmost_rightmost.y) / 2);
+    // cv::Point bottom = cv::Point((bottommost_leftmost.x + bottommost_rightmost.x) / 2, (bottommost_leftmost.y + bottommost_rightmost.y) / 2);
+
+    cv::Point top = leftTop;
+    cv::Point bottom = bottomLeft;
+
+    float slope = (float)(bottom.y - top.y) / (bottom.x - top.x);
+    float y_intercept = top.y - slope * top.x;
+
+    int16_t p1_x, p1_y, p2_x, p2_y;         // points for drawing slope line
+    p1_y = 0;
+    p2_y = mask.rows - 1;
+    p1_x = (p1_y - y_intercept) / slope;
+    p2_x = (p2_y - y_intercept) / slope;
+    cv::line(centerLine, cv::Point(p1_x, p1_y), cv::Point(p2_x, p2_y), cv::Scalar(255), 1);
+
+    cv::Point intersectionPoint;        // Point where the slope line intersects the WHITE_CENTER_POS line
+    intersectionPoint.y = Params::WHITE_VERTICAL_CROP;
+    intersectionPoint.x = (intersectionPoint.y - y_intercept) / slope;
+    cv::circle(centerLine, intersectionPoint, 2, cv::Scalar(255));
+
+    cv::line(centerLine, cv::Point(Params::WHITE_CENTER_POS, 0), cv::Point(Params::WHITE_CENTER_POS, mask.rows - 1), cv::Scalar(255), 1);
+    // cv::line(centerLine, cv::Point(0, intersectionPoint.y), cv::Point(mask.cols-1, intersectionPoint.y), cv::Scalar(255), 1);
+
+    dist = intersectionPoint.x - Params::WHITE_CENTER_POS;
+    cv::putText(centerLine, std::to_string(dist), cv::Point(0, 10), cv::FONT_HERSHEY_SIMPLEX, 0.25, cv::Scalar(255), 1); 
+
+    cv::line(centerLine, cv::Point(0, Params::WHITE_VERTICAL_CROP), cv::Point(mask.cols - 1, 
+             Params::WHITE_VERTICAL_CROP), cv::Scalar(255), 1);
     
-    dist -= WHITE_CENTER_POS;
+    dist -= Params::WHITE_CENTER_POS;
 
-    if (dist > MAX_WHITE_DIST) dist = MAX_WHITE_DIST;
-    if (dist < -MAX_WHITE_DIST) dist = -MAX_WHITE_DIST;
+    if (dist > Params::MAX_WHITE_DIST) dist = Params::MAX_WHITE_DIST;
+    if (dist < -Params::MAX_WHITE_DIST) dist = -Params::MAX_WHITE_DIST;
 
     return true;
 }
