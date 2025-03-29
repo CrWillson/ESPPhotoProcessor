@@ -266,9 +266,17 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path,
 int main(int argc, char *argv[]) {       
     std::vector<std::string> extensions = {".bin", ".BIN"};
     auto compacthexfiles = get_filenames_in_dir("../hex_images/", extensions);
-    int numFiles = compacthexfiles.size();
+    auto binaryFiles = get_filenames_in_dir("../binary_images/", extensions);
+    int numFiles = compacthexfiles.size() + binaryFiles.size();
+
 
     auto images = load_compact_hex_images(compacthexfiles, true);
+
+    for (auto i = 0; i < binaryFiles.size(); ++i) {
+        // Load binary images from the binary files
+        cv::Mat img = loadBinaryImage(binaryFiles[i]);
+        images.push_back(std::move(img));  // Move the matrix into the vector
+    }
 
     auto rgb888Images = convert_rgb565_to_rgb888(images);
 

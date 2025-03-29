@@ -119,26 +119,21 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
         return false;
     }
 
-    int maxSize = 0;
-    int maxInd = 0;
-    for (int i = 0; i < contours.size(); i++) {
-        int size = cv::contourArea(contours[i]);
-        if (size > maxSize) {
-            maxSize = size;
-            maxInd = i;
-        }
-    }
-    if (maxSize < Params::WHITE_MIN_SIZE) return false;
+    // Sort the contours to put the largest at index 0
+    std::sort(contours.begin(), contours.end(), [](const contour_t& a, const contour_t& b) {
+        return cv::contourArea(a) > cv::contourArea(b);
+    });
+    if (cv::contourArea(contours[0]) < Params::WHITE_MIN_SIZE) return false;
 
-    cv::Point topLeft, topRight, bottomLeft, bottomRight = contours[maxInd][0];
-    cv::Point leftTop, leftBottom, rightTop, rightBottom = contours[maxInd][0];
+    cv::Point topLeft, topRight, bottomLeft, bottomRight = contours[0][0];
+    cv::Point leftTop, leftBottom, rightTop, rightBottom = contours[0][0];
 
     // Initialize extreme values
-    int y_min = contours[maxInd][0].y, y_max = contours[maxInd][0].y;
-    int x_min = contours[maxInd][0].x, x_max = contours[maxInd][0].x;
+    int y_min = contours[0][0].y, y_max = contours[0][0].y;
+    int x_min = contours[0][0].x, x_max = contours[0][0].x;
 
     // First pass to determine min/max x and y
-    for (const auto& pt : contours[maxInd]) {
+    for (const auto& pt : contours[0]) {
         if (pt.y < y_min) y_min = pt.y;
         if (pt.y > y_max) y_max = pt.y;
         if (pt.x < x_min) x_min = pt.x;
@@ -146,7 +141,7 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
     }
 
     // Second pass to find exact extreme points
-    for (const auto& pt : contours[maxInd]) {
+    for (const auto& pt : contours[0]) {
         // Topmost row (y_min)
         if (pt.y == y_min) {
             if (topLeft == cv::Point() || pt.x < topLeft.x) topLeft = pt;
@@ -209,8 +204,6 @@ bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b&
     cv::line(centerLine, cv::Point(0, Params::WHITE_VERTICAL_CROP), cv::Point(mask.cols - 1, 
              Params::WHITE_VERTICAL_CROP), cv::Scalar(255), 1);
     
-    dist -= Params::WHITE_CENTER_POS;
-
     if (dist > Params::MAX_WHITE_DIST) dist = Params::MAX_WHITE_DIST;
     if (dist < -Params::MAX_WHITE_DIST) dist = -Params::MAX_WHITE_DIST;
 
