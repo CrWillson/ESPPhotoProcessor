@@ -92,7 +92,7 @@ bool MicroCV2::processCarImg(const cv::Mat &image, cv::Mat1b &mask)
     return percentCar >= (Params::PERCENT_TO_CAR*100);
 }
 
-bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b& centerLine, int8_t& dist, int8_t& height)
+bool MicroCV2::processWhiteImg(const cv::Mat& image, cv::Mat1b& mask, cv::Mat1b& centerLine, int8_t& dist)
 {
     mask = cv::Mat::zeros(image.size(), CV_8UC1);
     centerLine = cv::Mat::zeros(image.size(), CV_8UC1);

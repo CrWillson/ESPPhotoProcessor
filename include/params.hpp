@@ -7,9 +7,17 @@
 #pragma once
 
 #include <stdint.h>
-#include "constants.hpp"
 #include "opencv2.hpp"
 
+// Constants used throughout the code
+constexpr uint8_t IMG_ROWS = 96;    // 96 rows in each image
+constexpr uint8_t IMG_COLS = 96;    // 96 columns in each image
+constexpr uint16_t IMG_SIZE = IMG_ROWS * IMG_COLS * 2;    // 2 bytes per pixel
+
+/**
+ * @brief Parameters used for the image processing pipeline
+ * 
+ */
 namespace Params {
 
 constexpr uint16_t BOX_AREA(const uint8_t TL_X, const uint8_t TL_Y, const uint8_t BR_X, const uint8_t BR_Y) {
@@ -45,9 +53,9 @@ constexpr uint16_t STOPBOX_AREA = BOX_AREA(STOPBOX_TL_X, STOPBOX_TL_Y, STOPBOX_B
 
 constexpr uint8_t WHITE_VERTICAL_CROP   = 50;       // Height to remove all white pixels above
 constexpr uint8_t WHITE_HORIZONTAL_CROP = 75;       // Width to remove all white pixels to the right of
-inline    uint8_t WHITE_RED_THRESH      = 240;      // How red does a pixel need to be to be "white"
-inline    uint8_t WHITE_GREEN_THRESH    = 240;      // How green does a pixel need to be to be "white"
-inline    uint8_t WHITE_BLUE_THRESH     = 240;      // How blue does a pixel need to be to be "white"
+constexpr uint8_t WHITE_RED_THRESH      = 240;      // How red does a pixel need to be to be "white"
+constexpr uint8_t WHITE_GREEN_THRESH    = 240;      // How green does a pixel need to be to be "white"
+constexpr uint8_t WHITE_BLUE_THRESH     = 240;      // How blue does a pixel need to be to be "white"
 constexpr uint16_t WHITE_MIN_SIZE       = 50;       // Minimum size of a white blob to be considered as the white line
 constexpr uint8_t WHITE_CENTER_POS      = 28;       // X-Pos that the robot will attempt to keep the white line at
 constexpr uint8_t MAX_WHITE_DIST = CLAMP_CENTER_POS(IMG_COLS, WHITE_CENTER_POS);    // Clamp the distance from center so it can't go off the edge of the image

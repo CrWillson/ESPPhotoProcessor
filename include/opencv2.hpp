@@ -1,6 +1,12 @@
 #ifndef OPENCV2_HPP
 #define OPENCV2_HPP
 
+/**
+ * @brief This header exists because opencv2 is a pain to handle and throws a bunch of warnings that can be ignored
+ * 
+ * Remember kids: Compile with all warnings are errors enabled.
+ */
+
 // Disable warnings
 #ifdef _MSC_VER // For Microsoft Visual C++
     #pragma warning(push)

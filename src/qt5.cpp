@@ -71,7 +71,8 @@ QLabel* QT5::createImageLabel(const QImage& image) {
 }
 
 
-void QT5::showImageWindows(int argc, char *argv[], const std::span<cv::Mat>& originalImages, const std::span<cv::Mat>& processedImages) {
+void QT5::showImageWindows(int argc, char *argv[], const std::span<cv::Mat>& originalImages, 
+                           const std::span<cv::Mat>& processedImages, const std::span<std::string>& filenames) {
     // Create a Qt Application
     QApplication app(argc, argv);
 
@@ -94,7 +95,7 @@ void QT5::showImageWindows(int argc, char *argv[], const std::span<cv::Mat>& ori
         window->setLayout(layout);
 
         // Show the window
-        window->setWindowTitle(QString("%1").arg(i));
+        window->setWindowTitle(QString("%1").arg(QString::fromStdString(filenames[i])));
         window->show();
     }
 
