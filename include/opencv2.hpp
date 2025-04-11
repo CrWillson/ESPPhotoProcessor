@@ -4,7 +4,7 @@
 /**
  * @brief This header exists because opencv2 is a pain to handle and throws a bunch of warnings that can be ignored
  * 
- * Remember kids: Compile with all warnings are errors enabled.
+ * Remember kids: Compile with all warnings are errors enabled or you'll end up like whatever nerds made opencv.
  */
 
 // Disable warnings

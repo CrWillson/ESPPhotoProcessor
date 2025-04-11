@@ -28,7 +28,12 @@ namespace MicroCV2 {
     void RGB565toRGB888(const uint16_t pixel, uint16_t& red, uint16_t& green, uint16_t& blue);
 
     /**
-     * Set all pixels outside the specified box to (0,0,0)
+     * @brief Set all pixels outside the specified box to black
+     * 
+     * @param image - The image to crop
+     * @param BOX_TL - The top left corner of the box
+     * @param BOX_BR - The bottom right corner of the box
+     * @warning This function modifies the image in place
      */
     void cropImage(cv::Mat& image, const cv::Point2i& BOX_TL, const cv::Point2i& BOX_BR);
 

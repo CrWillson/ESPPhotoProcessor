@@ -30,6 +30,26 @@ constexpr uint16_t RGB888toRGB565(const uint8_t r, const uint8_t g, const uint8_
 }
 
 /**
+ * @brief Convert an RGB565 color to an RGB888 color.
+ * 
+ * @param pixel - The encoded RGB565 color
+ * @return std::array<uint8_t, 3> - Red, green, and blue values
+ */
+constexpr std::array<uint8_t, 3> RGB565toRGB888(const uint16_t pixel) {
+    // Extract individual color components (5-bit Red, 6-bit Green, 5-bit Blue)
+    uint8_t r = (pixel >> 11) & 0x1F;  // Extract red (5 bits)
+    uint8_t g = (pixel >> 5) & 0x3F;   // Extract green (6 bits)
+    uint8_t b = pixel & 0x1F;          // Extract blue (5 bits)
+
+    // Scale the components to 0-255 range
+    uint8_t red = (r * 255) / 31;  // Scale red from 5 bits to 8 bits
+    uint8_t green = (g * 255) / 63;  // Scale green from 6 bits to 8 bits
+    uint8_t blue = (b * 255) / 31;  // Scale blue from 5 bits to 8 bits
+
+    return {red, green, blue};
+}
+
+/**
  * @brief Convert an CV_8UC2 opencv matrix of RGB565 to a CV_8UC3 opencv matrix of RGB888
  * 
  * @param rgb565_image - The CV_8UC2 opencv matrix of RGB565
@@ -44,19 +64,10 @@ cv::Mat convert_rgb565_to_rgb888(const cv::Mat rgb565_image) {
             // Get the RGB565 pixel (2 bytes per pixel)
             cv::Vec2b vecpixel = rgb565_image.at<cv::Vec2b>(row, col);
             uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
-
-            // Extract individual color components (5-bit Red, 6-bit Green, 5-bit Blue)
-            uint8_t r = (pixel >> 11) & 0x1F;  // Extract red (5 bits)
-            uint8_t g = (pixel >> 5) & 0x3F;   // Extract green (6 bits)
-            uint8_t b = pixel & 0x1F;          // Extract blue (5 bits)
-
-            // Scale the components to 0-255 range
-            uint8_t r_scaled = (r * 255) / 31;  // Scale red from 5 bits to 8 bits
-            uint8_t g_scaled = (g * 255) / 63;  // Scale green from 6 bits to 8 bits
-            uint8_t b_scaled = (b * 255) / 31;  // Scale blue from 5 bits to 8 bits
+            auto rgb = RGB565toRGB888(pixel);
 
             // Set the RGB888 pixel in the output image
-            rgb888_image.at<cv::Vec3b>(row, col) = cv::Vec3b(b_scaled, g_scaled, r_scaled);  // OpenCV uses BGR order
+            rgb888_image.at<cv::Vec3b>(row, col) = cv::Vec3b(rgb[2], rgb[1], rgb[0]);  // OpenCV uses BGR order
         }
     }
 
@@ -66,6 +77,7 @@ cv::Mat convert_rgb565_to_rgb888(const cv::Mat rgb565_image) {
 /**
  * @brief Vectorized version of convert_rgb565_to_rgb888. Converts an entire span of RGB565 images to RGB888.
  * 
+ * @overload
  * @param rgb565_images - A span of CV_8UC2 opencv matrices of RGB565
  * @return std::vector<cv::Mat> - A vector of CV_8UC3 opencv matrices of RGB888
  */
