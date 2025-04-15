@@ -5,10 +5,10 @@
 #include <fstream>
 #include <qapplication.h>
 #include <string>
-#include <filesystem>
 #include <type_traits>
 #include <vector>
 #include <array>
+#include <filesystem>
 #include <span>
 
 namespace fs = std::filesystem;
@@ -189,7 +189,9 @@ cv::Mat load_compact_hex_image(const std::string& filename, bool saveImage = fal
 
     if (saveImage) {
         auto rgb888image = convert_rgb565_to_rgb888(image);
-        cv::imwrite(filename + std::string(".png"), rgb888image);
+        auto newfilename = filename.substr(0, filename.size() - 4) + std::string(".png");
+
+        cv::imwrite(newfilename, rgb888image);
     }
 
     return image;
@@ -245,9 +247,103 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path,
     return filenames;
 }
 
+void process_white_presentation_image()
+{
+    fs::path white_pre_path = "../presentation_images/0_white_preprocess.bin";
+    
+    // Load the original image
+    auto white_img = load_compact_hex_image(white_pre_path.string(), true);
 
+    // Filter the white pixels
+    cv::Mat white_processed = cv::Mat::zeros(white_img.size(), CV_8UC1);
+    for (uint8_t y = 0; y < white_img.rows; ++y) {
+        for (uint8_t x = 0; x < white_img.cols; ++x) {
+            cv::Vec2b vecpixel = white_img.at<cv::Vec2b>(y, x);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+
+            auto [red, green, blue] = RGB565toRGB888(pixel);
+
+            if (MicroCV2::isWhiteLine(red, green, blue)) {
+                white_processed.at<uchar>(y,x) = 255;
+            }
+        }
+    }
+    cv::imwrite("../presentation_images/1_white_filtered.png", MicroCV2::colorizeMask(white_processed, {255,255,255}));
+
+    // Crop the image
+    white_processed = cv::Mat::zeros(white_img.size(), CV_8UC1);
+    for (uint8_t y = Params::WHITE_VERTICAL_CROP; y < white_img.rows; ++y) {
+        for (uint8_t x = 0; x < Params::WHITE_HORIZONTAL_CROP; ++x) {
+            cv::Vec2b vecpixel = white_img.at<cv::Vec2b>(y, x);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+
+            auto [red, green, blue] = RGB565toRGB888(pixel);
+
+            if (MicroCV2::isWhiteLine(red, green, blue)) {
+                white_processed.at<uchar>(y,x) = 255;
+            }
+        }
+    }
+    cv::Mat white_decorated = MicroCV2::colorizeMask(white_processed, {255,255,255});
+    cv::line(white_decorated, cv::Point(0, Params::WHITE_VERTICAL_CROP), cv::Point(white_decorated.cols - 1, Params::WHITE_VERTICAL_CROP), cv::Scalar(0,255,0), 1);
+
+    cv::imwrite("../presentation_images/2_white_cropped.png", white_decorated);
+
+
+    // Contour and find slope of the side of the line
+    std::vector<contour_t> contours;
+    cv::findContours(white_processed, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    // Sort the contours to put the largest at index 0
+    std::sort(contours.begin(), contours.end(), [](const contour_t& a, const contour_t& b) {
+            return cv::contourArea(a) > cv::contourArea(b);
+    });
+    
+    cv::Point bottomLeft = contours[0][0];
+    cv::Point leftTop = contours[0][0];
+
+    for (const auto& pt : contours[0]) {
+        // bottom left point
+        if (pt.y > bottomLeft.y || (bottomLeft.y == pt.y && pt.x < bottomLeft.x)) {
+            bottomLeft = pt;
+        }
+        // left top point
+        if (pt.x < leftTop.x || (pt.x == leftTop.x && pt.y < leftTop.y)) {
+            leftTop = pt;
+        }
+    }
+
+    cv::circle(white_decorated, leftTop, 3, cv::Scalar(255,0,255));
+    cv::circle(white_decorated, bottomLeft, 3, cv::Scalar(255,0,255));
+
+    float slope = (float)(bottomLeft.y - leftTop.y) / (bottomLeft.x - leftTop.x);
+    float y_intercept = leftTop.y - slope * leftTop.x;
+
+    int16_t p1_x, p1_y, p2_x, p2_y;         // points for drawing slope line
+    p1_y = 0;
+    p2_y = white_decorated.rows - 1;
+    p1_x = (p1_y - y_intercept) / slope;
+    p2_x = (p2_y - y_intercept) / slope;
+    cv::line(white_decorated, cv::Point(p1_x, p1_y), cv::Point(p2_x, p2_y), cv::Scalar(0,0,255), 1);
+
+    cv::imwrite("../presentation_images/3_white_slope.png", white_decorated);
+
+
+    // Find the intersection point
+    cv::Point intersectionPoint;        // Point where the slope line intersects the WHITE_CENTER_POS line
+    intersectionPoint.y = Params::WHITE_VERTICAL_CROP;
+    intersectionPoint.x = (intersectionPoint.y - y_intercept) / slope;
+
+    cv::line(white_decorated, cv::Point(20, 0), cv::Point(20, white_processed.rows - 1), cv::Scalar(255,255,0), 1);
+    cv::line(white_decorated, cv::Point(intersectionPoint.x, 0), cv::Point(intersectionPoint.x, white_processed.rows - 1), cv::Scalar(255,0,255), 1);
+
+    cv::imwrite("../presentation_images/4_white_distance.png", white_decorated);
+}
 
 int main(int argc, char *argv[]) {
+   
+    process_white_presentation_image();
+
     // Gather all of the filenames from the relevant directories       
     std::vector<std::string> extensions = {".bin", ".BIN"};
     auto compacthexfiles = get_filenames_in_dir("../hex_images/", extensions);
