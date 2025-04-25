@@ -1,6 +1,9 @@
 # ESP Photo Processor
 Written by Caleb Willson
 
+## Documentation
+Full Doxygen documentation can be found in [docs.html](./docs.html)
+
 ## Installation
 
 ### Cloning

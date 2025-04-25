@@ -110,19 +110,22 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
 <div class="textblock"><p><a class="anchor" id="md__r_e_a_d_m_e"></a></p>
 <p>Written by Caleb Willson</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
+Documentation</h1>
+<p>Full Doxygen documentation can be found in <a href="./docs.html">docs.html</a></p>
+<h1><a class="anchor" id="autotoc_md2"></a>
 Installation</h1>
-<h2><a class="anchor" id="autotoc_md2"></a>
+<h2><a class="anchor" id="autotoc_md3"></a>
 Cloning</h2>
 <p>The repository and its submodules can be cloned with the following command.</p>
 <div class="fragment"><div class="line">git clone --recurse-submodules https://github.com/CrWillson/ESPPhotoProcessor.git</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md3"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
 Dependencies</h2>
 <p>This program requires both the QT5-base and OpenCV libraries to be installed through vcpkg. It also requires the use of the Visual Studio Community 2022 Release - amd64 compiler.</p>
-<h1><a class="anchor" id="autotoc_md4"></a>
+<h1><a class="anchor" id="autotoc_md5"></a>
 Summary</h1>
 <p>This program is intended to be used as a test bed for new parameters and image processing pipelines for the SafeTown Senior Robot.</p>
 <p>Images can be loaded into the program through two means outlined below.</p>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 1. Integrated Line Following Program Image Saving</h2>
 <blockquote class="doxtable">
 <p>This method will require the virtual file system to be set up on the Pi Pico and for a substantial portion of the flash memory to be allocated to the file system. </p>
@@ -130,7 +133,7 @@ Summary</h1>
 <p>The regular line following program for the ESP32 has the ability to send photos to the Pi Pico when requested. To do this, the Pi Pico needs to send a <code>COMMAND_PACKET</code> type packet with the <code>CMD_REQUEST_IMAGE</code> command. Upon receiving an image request command, the next packet sent from the ESP32 to the Pico will contain an entire image. The Pico will then handle saving that image to its virtual file system.</p>
 <p>Once the image is saved on the Pico, the user can navigate to it using the Pico's file explorer menu and select the option to print it over the serial line. This will, as the name implies, dump the entire file's contents onto the serial line. The purpose of <code>serial_monitor.py</code> is to read the serial line and automatically save any image files it sees back into a new file on the computer.</p>
 <p>When an image is saved in this way, it will be saved in a compact hex format. This format is human readable and consists of 4 hex characters for each pixel and a newline for every row of pixels. In the current program, these files are loaded from the <code>/hex_images/</code> directory.</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md7"></a>
 2. SD-Card Image Saving Program</h2>
 <blockquote class="doxtable">
 <p>This method will requre a FAT32 formatted SD card and some means of reading an SD card on a computer. </p>

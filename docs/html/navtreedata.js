@@ -25,13 +25,14 @@
 var NAVTREE =
 [
   [ "ESP Photo Processor", "index.html", [
-    [ "Installation", "index.html#autotoc_md1", [
-      [ "Cloning", "index.html#autotoc_md2", null ],
-      [ "Dependencies", "index.html#autotoc_md3", null ]
+    [ "Documentation", "index.html#autotoc_md1", null ],
+    [ "Installation", "index.html#autotoc_md2", [
+      [ "Cloning", "index.html#autotoc_md3", null ],
+      [ "Dependencies", "index.html#autotoc_md4", null ]
     ] ],
-    [ "Summary", "index.html#autotoc_md4", [
-      [ "Integrated Line Following Program Image Saving", "index.html#autotoc_md5", null ],
-      [ "SD-Card Image Saving Program", "index.html#autotoc_md6", null ]
+    [ "Summary", "index.html#autotoc_md5", [
+      [ "Integrated Line Following Program Image Saving", "index.html#autotoc_md6", null ],
+      [ "SD-Card Image Saving Program", "index.html#autotoc_md7", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
