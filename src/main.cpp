@@ -247,6 +247,10 @@ std::vector<std::string> get_filenames_in_dir(const std::string& directory_path,
     return filenames;
 }
 
+/**
+ * @brief Function to generate intermediary steps of a white line image for presentation purposes
+ * 
+ */
 void process_white_presentation_image()
 {
     fs::path white_pre_path = "../presentation_images/0_white_preprocess.bin";
@@ -340,9 +344,74 @@ void process_white_presentation_image()
     cv::imwrite("../presentation_images/4_white_distance.png", white_decorated);
 }
 
+/**
+ * @brief Function to generate intermediary steps of a red line image for presentation purposes
+ * 
+ */
+void process_red_presentation_image()
+{
+    fs::path red_pre_path = "../presentation_images/0_red_preprocess.bin";
+    
+    // Load the original image
+    auto red_img = load_compact_hex_image(red_pre_path.string(), true);
+
+    // Filter the white pixels
+    cv::Mat red_processed = cv::Mat::zeros(red_img.size(), CV_8UC1);
+    for (uint8_t y = 0; y < red_img.rows; ++y) {
+        for (uint8_t x = 0; x < red_img.cols; ++x) {
+            cv::Vec2b vecpixel = red_img.at<cv::Vec2b>(y, x);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+
+            auto [red, green, blue] = RGB565toRGB888(pixel);
+
+            if (MicroCV2::isStopLine(red, green, blue) && !MicroCV2::isWhiteLine(red, green, blue)) {
+                red_processed.at<uchar>(y,x) = 255;
+            }
+        }
+    }
+    cv::imwrite("../presentation_images/1_red_filtered.png", MicroCV2::colorizeMask(red_processed, {255,0,0}));
+
+
+
+    // Crop the image
+    red_processed = cv::Mat::zeros(red_img.size(), CV_8UC1);
+    uint16_t redCount = 0;
+    for (uint8_t y = 0; y < red_img.rows; ++y) {
+        for (uint8_t x = 0; x < red_img.cols; ++x) {
+            cv::Vec2b vecpixel = red_img.at<cv::Vec2b>(y, x);
+            uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+
+            auto [red, green, blue] = RGB565toRGB888(pixel);
+
+            if (MicroCV2::isStopLine(red, green, blue) && !MicroCV2::isWhiteLine(red, green, blue)) {
+                if (x >= Params::STOPBOX_TL.x && x <= Params::STOPBOX_BR.x && y >= Params::STOPBOX_TL.y && y <= Params::STOPBOX_BR.y) {
+                    redCount++;
+                    red_processed.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    cv::Mat red_decorated = MicroCV2::colorizeMask(red_processed, {255,0,0});
+    cv::rectangle(red_decorated, Params::STOPBOX_TL, Params::STOPBOX_BR, cv::Scalar(255,255,255), 1);
+    cv::imwrite("../presentation_images/2_red_cropped.png", red_decorated);
+ 
+    uint16_t percentRed = (redCount*10000) / Params::STOPBOX_AREA;
+    float percent = (float)percentRed / 100;
+
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(2) << percent << "%";
+    std::string text = ss.str();
+
+    cv::putText(red_decorated, text, {25,40}, cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 255), 1);
+    cv::rectangle(red_decorated, Params::STOPBOX_TL, Params::STOPBOX_BR, cv::Scalar(0,255,0), 1);
+    cv::imwrite("../presentation_images/3_red_counted.png", red_decorated);
+}
+
 int main(int argc, char *argv[]) {
    
-    process_white_presentation_image();
+    // process_white_presentation_image();
+    // process_red_presentation_image();
 
     // Gather all of the filenames from the relevant directories       
     std::vector<std::string> extensions = {".bin", ".BIN"};
