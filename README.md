@@ -1,6 +1,19 @@
 # ESP Photo Processor
 Written by Caleb Willson
 
+## Installation
+
+### Cloning
+The repository and its submodules can be cloned with the following command.
+
+```bash
+git clone --recurse-submodules https://github.com/CrWillson/ESPPhotoProcessor.git
+```
+
+### Dependencies
+This program requires both the QT5-base and OpenCV libraries to be installed through vcpkg. It also requires the use of the Visual Studio Community 2022 Release - amd64 compiler. 
+
+
 ## Summary
 This program is intended to be used as a test bed for new parameters and image processing pipelines for the SafeTown Senior Robot. 
 
@@ -24,6 +37,5 @@ When the ESP32 is running the **ESPCamera** program, it will save one image to t
 
 When an image is saved this way, it will be saved as its raw binary. This format is not human readable but is more space effecient. It does not require the use of the serial port as the files can be transfered directly to the computer via the SD card. In the current program, images of this format are loaded from the `/binary_images/` directory. 
 
-## Dependencies
-This program requires both the QT5-base and OpenCV libraries to be installed through vcpkg. It also requires the use of the Visual Studio Community 2022 Release- amd64 compiler. 
+
 
